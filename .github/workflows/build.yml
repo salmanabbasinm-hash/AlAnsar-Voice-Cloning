@@ -1,0 +1,47 @@
+name: Build from ZIP
+on:
+  push:
+    paths:
+      - "*.zip"
+      - "upload/*.zip"
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  pages: write
+concurrency: zip-build
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Unpack newest ZIP and build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          git config core.quotepath false
+          Z=$(git log -1 --diff-filter=AM --name-only --pretty=format: -- '*.zip' | grep -m1 '\.zip$' || true)
+          [ -n "$Z" ] || Z=$(ls -t ./*.zip upload/*.zip 2>/dev/null | head -1)
+          [ -n "$Z" ] || { echo "No ZIP found"; exit 1; }
+          N=$(basename "$Z")
+          mkdir -p upload
+          [ "$Z" = "upload/$N" ] || mv -f "$Z" "upload/$N"
+          find . -name '*.zip' -not -path './.git/*' -not -path "./upload/$N" -delete
+          rm -rf _x && mkdir _x && unzip -q "upload/$N" -d _x
+          D=_x
+          [ "$(ls -A _x | wc -l)" = 1 ] && [ -d "_x/$(ls _x)" ] && D="_x/$(ls _x)"
+          rm -rf "$D/.github" "$D/upload" "$D/signing" "$D/.git"
+          rm -rf docs backend mobile colab tools
+          cp -a "$D"/. .
+          rm -rf _x
+          [ -f tools/ci.sh ] || { echo "tools/ci.sh missing in ZIP"; exit 1; }
+          bash tools/ci.sh "$N"

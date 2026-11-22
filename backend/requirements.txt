@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+python-multipart
+omnivoice
+faster-whisper
+transformers
+sentencepiece
+soundfile
+librosa
+accelerate

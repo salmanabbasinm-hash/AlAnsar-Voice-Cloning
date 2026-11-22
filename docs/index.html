@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Al-Ansar Voice Cloning</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f766e">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Al-Ansar">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#12302b;--mute:#5d746f;--line:#d7e3e0;--pri:#0f766e;--pri2:#0a5a54;--bad:#b42318;--ok:#067647;--warn:#b54708;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1a18;--ink:#e6f2ef;--mute:#9db5b0;--line:#27403b;--pri:#14b8a6;--pri2:#2dd4bf;--card:#142825}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Naskh Arabic","Noto Nastaliq Urdu",Tahoma,system-ui,sans-serif;font-size:17px;line-height:1.7;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.wrap{max-width:640px;margin:0 auto;padding:14px}
+header{text-align:center;padding:10px 0 4px}
+header h1{margin:0;font-size:26px;color:var(--pri);direction:ltr}
+header p{margin:2px 0 0;color:var(--mute);font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}
+label{display:block;font-weight:700;margin:6px 0 4px}
+select,input[type=text],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+textarea{min-height:90px;resize:vertical}
+.row{display:flex;gap:8px;align-items:flex-end}
+.row>div{flex:1}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:12px 16px;background:var(--line);color:var(--ink)}
+button.pri{background:var(--pri);color:#fff;width:100%;font-size:19px;font-weight:700;padding:15px}
+button.pri:disabled{opacity:.55}
+button.sm{padding:9px 12px;font-size:15px}
+.file{display:block;border:2px dashed var(--line);border-radius:14px;padding:18px;text-align:center;cursor:pointer;color:var(--mute)}
+.file.has{border-color:var(--pri);color:var(--ink)}
+.file input{display:none}
+.pill{display:inline-block;padding:3px 12px;border-radius:99px;font-size:14px;border:1px solid var(--line)}
+.pill.ok{color:var(--ok);border-color:var(--ok)}.pill.wait{color:var(--warn);border-color:var(--warn)}.pill.off,.pill.bad{color:var(--bad);border-color:var(--bad)}
+.bar{height:12px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;width:0;background:var(--pri);transition:width .4s}
+details summary{cursor:pointer;font-weight:700}
+.radio{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.radio label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin:0}
+audio,video{width:100%;margin-top:8px;border-radius:12px}
+a.dl{display:inline-block;margin-top:8px;padding:10px 14px;background:var(--pri);color:#fff;border-radius:12px;text-decoration:none}
+.hide{display:none}.msg{color:var(--mute);font-size:15px}.err{color:var(--bad);font-weight:700}
+.note{font-size:14px;color:var(--mute)}
+header{position:relative}
+.gear{position:absolute;left:0;top:8px;background:var(--card);border:1px solid var(--line);width:44px;height:44px;border-radius:50%;padding:0;font-size:22px}
+.sheet{position:fixed;inset:0;background:var(--bg);overflow:auto;z-index:20;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.sh-head{display:flex;justify-content:space-between;align-items:center;font-size:20px;padding:6px 0}
+.card h2{margin:0 0 8px;font-size:19px;color:var(--pri)}
+.card h3{margin:12px 0 2px;font-size:16px}
+.kv{width:100%;border-collapse:collapse;font-size:16px}
+.kv td{padding:6px 4px;border-bottom:1px solid var(--line)}.kv td:last-child{text-align:left;direction:ltr;font-weight:700}
+.two{display:flex;gap:8px;margin-top:10px}.two button{flex:1}
+button.pri2{background:var(--pri);color:#fff;font-weight:700}button.pri2:disabled{opacity:.5}
+.modal{position:fixed;inset:0;background:#0009;z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal .card{max-width:420px;width:100%;margin:0}
+.about ol,.about ul{margin:4px 0;padding-inline-start:22px}
+.upd-msg{margin-top:8px;font-size:15px}.badge{display:inline-block;background:var(--pri);color:#fff;border-radius:99px;padding:0 10px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <button class="gear" id="openSet" title="سیٹنگز">⚙️</button>
+  <h1>🌙 Al-Ansar Voice Cloning</h1>
+  <p>اپنی آواز اور جذبات کے ساتھ دوسری زبان میں تقریر</p>
+  <span id="pill" class="pill off">…</span>
+</header>
+
+<div class="card hide" id="hint"><b>پہلے سرور جوڑیں</b><p class="note" style="margin:4px 0 8px">سیٹنگز ← سرور میں Colab سے ملا لنک چسپاں کریں۔</p><button class="sm" id="hintBtn">⚙️ سیٹنگز کھولیں</button></div>
+
+<div class="card">
+  <label>① اپنی تقریر (آڈیو یا ویڈیو)</label>
+  <label class="file" id="fileLbl"><span id="fileTxt">📁 فائل چنیں</span>
+    <input id="file" type="file" accept="audio/*,video/*"></label>
+  <div class="row" style="margin-top:10px">
+    <div><label for="src">② تقریر کی زبان</label><select id="src"></select></div>
+    <button class="sm" id="swap" title="بدلیں">⇄</button>
+    <div><label for="tgt">③ کس زبان میں</label><select id="tgt"></select></div>
+  </div>
+</div>
+
+<details class="card">
+  <summary>مزید اختیارات (ضروری نہیں)</summary>
+  <label>آواز کا طریقہ</label>
+  <div class="radio">
+    <label><input type="radio" name="mode" value="emotion" checked> آسان (تجویز کردہ): تقریر کی اپنی آواز اور جذبات</label>
+    <label><input type="radio" name="mode" value="sample"> میرے صاف نمونے کی آواز (اگر لہجہ اصل زبان جیسا لگے)</label>
+  </div>
+  <label>اپنی آواز کا نمونہ (5 سے 10 سیکنڈ)</label>
+  <div class="row"><button class="sm" id="rec">🎤 ریکارڈ کریں</button>
+  <label class="file" style="padding:9px;flex:1"><span id="smpTxt">یا فائل چنیں</span><input id="smp" type="file" accept="audio/*"></label></div>
+  <audio id="smpPrev" controls class="hide"></audio>
+  <label>کوالٹی</label>
+  <div class="radio">
+    <label><input type="radio" name="q" value="best" checked> بہترین (سست مگر صاف تلفظ)</label>
+    <label><input type="radio" name="q" value="fast"> تیز</label>
+  </div>
+  <label style="font-weight:400"><input type="checkbox" id="timing" checked> اصل رفتار اور وقفوں سے میل کھائیں</label>
+</details>
+
+<button class="pri" id="go">🎙️ آواز بنائیں</button>
+
+<div class="card hide" id="prog">
+  <div class="bar"><i id="fill"></i></div>
+  <div class="msg" id="pmsg">…</div>
+</div>
+
+<div class="card hide" id="res">
+  <b>نتیجہ</b>
+  <audio id="aud" controls></audio>
+  <a class="dl" id="dla" download="AlAnsar.wav">⬇️ آڈیو ڈاؤن لوڈ</a>
+  <div id="vbox" class="hide"><video id="vid" controls playsinline></video>
+  <a class="dl" id="dlv" download="AlAnsar.mp4">⬇️ ویڈیو ڈاؤن لوڈ</a></div>
+  <label>تقریر کا متن</label><textarea id="tsrc" readonly></textarea>
+  <label>ترجمہ</label><textarea id="ttgt" readonly></textarea>
+</div>
+<p class="note" style="text-align:center">یہ خودکار ترجمہ اور آواز ہے، اہم مواد نشر کرنے سے پہلے خود سن کر جانچ لیں۔</p>
+</div>
+
+
+<div id="settings" class="sheet hide"><div class="wrap">
+  <div class="sh-head"><b>⚙️ سیٹنگز</b><button class="sm" id="closeSet">✕ بند کریں</button></div>
+
+  <section class="card"><h2>🔌 سرور</h2>
+    <label for="srvIn">سرور کا لنک (Colab سے کاپی کر کے چسپاں کریں)</label>
+    <input id="srvIn" type="text" dir="ltr" placeholder="https://....trycloudflare.com" autocomplete="off">
+    <div class="two"><button class="pri2" id="srvSave">محفوظ کریں</button><button id="srvTest">جانچیں</button></div>
+    <p class="note" id="srvMsg">پورا لنک چسپاں کریں، کلید خود الگ ہو جائے گی۔</p>
+  </section>
+
+  <section class="card"><h2>🔄 اپڈیٹ اور ورژن</h2>
+    <table class="kv">
+      <tr><td>انسٹال شدہ ورژن</td><td id="vInst">-</td></tr>
+      <tr><td>تازہ ترین ورژن</td><td id="vLast">-</td></tr>
+      <tr><td>اپڈیٹ کا سائز</td><td id="vSize">-</td></tr>
+      <tr><td>کل ڈاؤن لوڈز (انسٹال کا اندازہ)</td><td id="vDl">-</td></tr>
+      <tr><td>آخری اپڈیٹ کی تاریخ</td><td id="vDate">-</td></tr>
+    </table>
+    <div class="upd-msg" id="updMsg">…</div>
+    <div class="two"><button id="chk">🔍 اپڈیٹ چیک کریں</button><button class="pri2" id="doUpd" disabled>⬇️ اپڈیٹ کریں</button></div>
+    <p class="note">اینڈرائیڈ ایپ میں "اپڈیٹ کریں" نیا APK ڈاؤن لوڈ کرتا ہے، پھر فون کی انسٹال اسکرین پر ایک بار "Update" دبانا ہوتا ہے۔ ڈاؤن لوڈز کی گنتی GitHub سے آتی ہے، یہ اصل انسٹال کی تعداد کا اندازہ ہے۔</p>
+    <a class="dl" id="apkLink" href="#" target="_blank" rel="noopener">⬇️ اینڈرائیڈ APK ڈاؤن لوڈ</a>
+  </section>
+
+  <section class="card about"><h2>ℹ️ ایپ کے بارے میں (About)</h2>
+    <h3>تعارف</h3>
+    <p>Al-Ansar Voice Cloning آپ کی تقریر (آڈیو یا ویڈیو) سنتی ہے، اس کا ترجمہ کرتی ہے، اور پھر آپ ہی کی آواز، لہجے اور جذبات کے ساتھ دوسری زبان میں سناتی ہے۔ اردو، عربی، انگریزی، ہندی، فارسی اور مزید زبانیں شامل ہیں۔</p>
+    <h3>استعمال کا طریقہ</h3>
+    <ol>
+      <li>Colab میں سرور چلائیں اور ملنے والا لنک سیٹنگز ← سرور میں ڈالیں۔</li>
+      <li>اوپر 🟢 "سرور تیار" آنے کا انتظار کریں۔</li>
+      <li>① میں اپنی تقریر کی فائل چنیں۔</li>
+      <li>② اور ③ میں زبانیں چنیں۔</li>
+      <li>"آواز بنائیں" دبائیں، اور ختم ہونے پر سنیں یا ڈاؤن لوڈ کریں۔</li>
+    </ol>
+    <h3>بہتر نتیجے کے مشورے</h3>
+    <ul>
+      <li>صاف ریکارڈنگ دیں، کم شور اور بغیر موسیقی کے۔</li>
+      <li>"بہترین" کوالٹی چنیں، تلفظ زیادہ صاف آتا ہے۔</li>
+      <li>لہجہ اصل زبان جیسا لگے تو "مزید اختیارات" میں اپنی صاف آواز کا نمونہ ریکارڈ کر کے دیں۔</li>
+      <li>لمبی تقریر کو چھوٹے حصوں میں دیں۔</li>
+    </ul>
+    <h3>حدود</h3>
+    <ul>
+      <li>ترجمہ اور آواز خودکار ہیں، نشر کرنے سے پہلے خود سن کر جانچ لیں۔</li>
+      <li>جذبات کی منتقلی کوشش ہے، ہر بار مکمل نہیں ہوتی۔</li>
+      <li>مفت سرور مستقل نہیں ہوتا، Colab بند ہو تو دوبارہ چلانا پڑتا ہے۔</li>
+    </ul>
+    <h3>رازداری اور ذمہ داری</h3>
+    <p>آپ کی فائلیں صرف آپ کے اپنے سرور پر جاتی ہیں اور تقریباً 3 گھنٹے بعد خود مٹ جاتی ہیں۔ صرف اپنی یا اجازت والی آواز کلون کریں۔</p>
+    <h3>معلومات</h3>
+    <table class="kv">
+      <tr><td>ایپ کا ورژن</td><td id="aVer">-</td></tr>
+      <tr><td>انجن</td><td>Whisper، NLLB-200، OmniVoice</td></tr>
+    </table>
+  </section>
+</div></div>
+
+<div id="updModal" class="modal hide"><div class="card">
+  <h2>🆕 نیا ورژن دستیاب ہے</h2>
+  <div id="updInfo" class="upd-msg"></div>
+  <button class="pri" id="updNow" style="margin-top:12px">⬇️ ابھی اپڈیٹ کریں</button>
+  <button class="sm" id="updLater" style="width:100%;margin-top:8px">بعد میں</button>
+</div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const LANGS=[["اردو","ur"],["عربی","ar"],["انگریزی","en"],["ہندی","hi"],["فارسی","fa"],["ترکی","tr"],["فرانسیسی","fr"],["ہسپانوی","es"],["جرمن","de"],["روسی","ru"],["چینی","zh"],["جاپانی","ja"],["کوریائی","ko"],["انڈونیشی","id"],["اطالوی","it"],["پرتگالی","pt"],["بنگالی","bn"]];
+for(const [n,c] of LANGS){for(const id of ["src","tgt"]){const o=document.createElement("option");o.value=c;o.textContent=n;$("#"+id).appendChild(o)}}
+$("#src").value="ur";$("#tgt").value="ar";
+$("#swap").onclick=()=>{const a=$("#src").value;$("#src").value=$("#tgt").value;$("#tgt").value=a};
+
+let server=localStorage.getItem("server")||"",key=localStorage.getItem("key")||"";
+function parseLink(t){t=(t||"").trim();if(!t)return null;if(!/^https?:\/\//i.test(t))t="https://"+t;
+  try{const u=new URL(t);const s=u.searchParams.get("server");
+    if(s)return{server:s.replace(/\/+$/,""),key:u.searchParams.get("key")||""};
+    return{server:u.origin,key:u.searchParams.get("key")||""}}catch(e){return null}}
+function saveServer(p){server=p.server;key=p.key;localStorage.setItem("server",server);localStorage.setItem("key",key);$("#srvIn").value=server}
+(function init(){const q=new URLSearchParams(location.search);
+  if(q.get("server")){saveServer({server:q.get("server").replace(/\/+$/,""),key:q.get("key")||""});history.replaceState(null,"",location.pathname)}
+  $("#srvIn").value=server})();
+$("#srvSave").onclick=()=>{const p=parseLink($("#srvIn").value);if(!p){$("#srvMsg").textContent="لنک درست نہیں";return}saveServer(p);$("#srvMsg").textContent="محفوظ ہو گیا";health()};
+$("#srvTest").onclick=async()=>{$("#srvMsg").textContent="جانچ ہو رہی ہے…";await health();$("#srvMsg").textContent=$("#pill").textContent};
+
+const H=()=>({"X-Key":key});
+function pill(c,t){const p=$("#pill");p.className="pill "+c;p.textContent=t}
+let ready=false;
+async function health(){
+  $("#hint").classList.toggle("hide",!!server);
+  if(!server){pill("off","سرور کا لنک ڈالیں");ready=false;return}
+  try{const r=await fetch(server+"/api/health",{headers:H()});
+    if(r.status===401){pill("bad","🔴 کلید غلط ہے، نیا لنک ڈالیں");ready=false;return}
+    const j=await r.json();
+    if(j.error){pill("bad","🔴 سرور میں خرابی: "+j.error);ready=false;return}
+    ready=!!j.ready;pill(ready?"ok":"wait",ready?"🟢 سرور تیار":"🟡 ماڈل لوڈ ہو رہے ہیں، چند منٹ رکیں")
+  }catch(e){ready=false;pill("off","🔴 سرور سے رابطہ نہیں")}}
+health();setInterval(()=>{if(!busy)health()},6000);
+
+$("#file").onchange=e=>{const f=e.target.files[0];$("#fileTxt").textContent=f?("✅ "+f.name):"📁 فائل چنیں";$("#fileLbl").classList.toggle("has",!!f)};
+
+let sampleBlob=null,mr=null,chunks=[],timer=null,sampleName="sample.webm";
+function setSample(b,name){sampleBlob=b;sampleName=name;const a=$("#smpPrev");a.src=URL.createObjectURL(b);a.classList.remove("hide")}
+$("#smp").onchange=e=>{const f=e.target.files[0];if(f){setSample(f,f.name);$("#smpTxt").textContent="✅ "+f.name}};
+$("#rec").onclick=async()=>{
+  if(mr&&mr.state==="recording"){mr.stop();return}
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mt=["audio/webm;codecs=opus","audio/mp4","audio/webm"].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||"";
+    mr=mt?new MediaRecorder(st,{mimeType:mt}):new MediaRecorder(st);chunks=[];let s=0;
+    mr.ondataavailable=e=>chunks.push(e.data);
+    mr.onstop=()=>{clearInterval(timer);st.getTracks().forEach(t=>t.stop());
+      const type=mr.mimeType||"audio/webm";setSample(new Blob(chunks,{type}),"sample."+(type.includes("mp4")?"m4a":"webm"));$("#rec").textContent="🎤 دوبارہ ریکارڈ کریں"};
+    mr.start();$("#rec").textContent="⏹ بند کریں (0s)";
+    timer=setInterval(()=>{s++;$("#rec").textContent="⏹ بند کریں ("+s+"s)";if(s>=25)mr.stop()},1000);
+  }catch(e){alert("مائیک کی اجازت نہیں ملی۔ آپ فائل بھی چن سکتے ہیں۔")}};
+
+let busy=false;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function fail(m){$("#pmsg").innerHTML='<span class="err">'+m+'</span>'}
+$("#go").onclick=async()=>{
+  if(!server){openSettings();return}
+  const f=$("#file").files[0];if(!f){alert("پہلے تقریر کی فائل چنیں");return}
+  const mode=document.querySelector('input[name=mode]:checked').value;
+  if(mode==="sample"&&!sampleBlob){alert("اس طریقے میں اپنی آواز کا نمونہ دینا ضروری ہے");return}
+  if($("#src").value===$("#tgt").value){alert("دونوں زبانیں الگ چنیں");return}
+  await health();if(!ready){alert("سرور ابھی تیار نہیں");return}
+  busy=true;$("#go").disabled=true;$("#res").classList.add("hide");$("#prog").classList.remove("hide");
+  $("#fill").style.width="3%";$("#pmsg").textContent="فائل اپ لوڈ ہو رہی ہے…";
+  try{
+    const fd=new FormData();fd.append("file",f,f.name);fd.append("src",$("#src").value);fd.append("tgt",$("#tgt").value);
+    fd.append("mode",mode);fd.append("quality",document.querySelector('input[name=q]:checked').value);
+    fd.append("timing",$("#timing").checked?"1":"0");
+    if(sampleBlob)fd.append("sample",sampleBlob,sampleName);
+    const r=await fetch(server+"/api/jobs",{method:"POST",headers:H(),body:fd});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.detail||("خرابی "+r.status))}
+    const {id}=await r.json();
+    while(true){await sleep(2000);
+      const s=await fetch(server+"/api/jobs/"+id,{headers:H()});if(!s.ok)throw new Error("رابطہ ٹوٹ گیا");
+      const j=await s.json();$("#fill").style.width=Math.max(3,Math.round(j.progress*100))+"%";$("#pmsg").textContent=j.message;
+      if(j.status==="error"){throw new Error(j.message)}
+      if(j.status==="done"){
+        const ab=await (await fetch(server+"/api/jobs/"+id+"/audio",{headers:H()})).blob();
+        const au=URL.createObjectURL(ab);$("#aud").src=au;$("#dla").href=au;
+        $("#vbox").classList.add("hide");
+        if(j.has_video){const vb=await (await fetch(server+"/api/jobs/"+id+"/video",{headers:H()})).blob();
+          const vu=URL.createObjectURL(vb);$("#vid").src=vu;$("#dlv").href=vu;$("#vbox").classList.remove("hide")}
+        $("#tsrc").value=j.source_text;$("#ttgt").value=j.target_text;
+        $("#res").classList.remove("hide");$("#prog").classList.add("hide");break}}
+  }catch(e){fail(e.message||"خرابی")}
+  busy=false;$("#go").disabled=false};
+
+
+/* ---------- Settings, version, updates ---------- */
+let local={version:"0.0.0"},cfg={repo:""},relInfo=null;
+const isApk=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
+const APK_NAME="AlAnsar-VoiceCloning.apk";
+function openSettings(){$("#settings").classList.remove("hide");checkUpdate(false)}
+$("#openSet").onclick=openSettings;$("#hintBtn").onclick=openSettings;
+$("#closeSet").onclick=()=>$("#settings").classList.add("hide");
+const mb=n=>(n/1048576).toFixed(1)+" MB";
+function cmp(a,b){const x=String(a).replace(/^v/i,"").split(".").map(n=>parseInt(n)||0),y=String(b).replace(/^v/i,"").split(".").map(n=>parseInt(n)||0);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)>(y[i]||0)?1:-1}return 0}
+async function openUrl(u){try{const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;if(B){await B.open({url:u});return}}catch(e){}window.open(u,"_blank")}
+async function loadLocal(){
+  try{local=await (await fetch("version.json",{cache:"no-store"})).json()}catch(e){}
+  try{cfg=await (await fetch("app-config.json",{cache:"no-store"})).json()}catch(e){}
+  $("#vInst").textContent="v"+local.version;$("#aVer").textContent="v"+local.version+(isApk?" (اینڈرائیڈ ایپ)":" (ویب ایپ)");
+  if(cfg.repo)$("#apkLink").href="https://github.com/"+cfg.repo+"/releases/latest/download/"+APK_NAME;else $("#apkLink").classList.add("hide")}
+let shownModal=false;
+async function checkUpdate(auto){
+  if(!cfg.repo){$("#updMsg").textContent="اپڈیٹ کی ترتیب ابھی موجود نہیں (پہلا بلڈ مکمل ہونے کے بعد چلے گی)";return}
+  if(!auto)$("#updMsg").textContent="چیک ہو رہا ہے…";
+  try{
+    const r=await fetch("https://api.github.com/repos/"+cfg.repo+"/releases?per_page=100");
+    if(!r.ok)throw new Error("GitHub "+r.status);
+    const rels=(await r.json()).filter(x=>!x.draft&&!x.prerelease&&x.assets.some(a=>a.name.endsWith(".apk")));
+    if(!rels.length){$("#updMsg").textContent="ابھی کوئی ریلیز نہیں";return}
+    const L=rels[0],A=L.assets.find(a=>a.name.endsWith(".apk"));
+    const dl=rels.reduce((s,x)=>s+x.assets.filter(a=>a.name.endsWith(".apk")).reduce((t,a)=>t+a.download_count,0),0);
+    relInfo={ver:L.tag_name.replace(/^v/i,""),size:A.size,url:A.browser_download_url,notes:(L.body||"").trim(),date:L.published_at};
+    $("#vLast").textContent="v"+relInfo.ver;$("#vSize").textContent=mb(A.size);$("#vDl").textContent=dl;
+    $("#vDate").textContent=new Date(L.published_at).toLocaleDateString("ur-PK");
+    const newer=cmp(relInfo.ver,local.version)>0;
+    $("#doUpd").disabled=!newer;
+    $("#updMsg").innerHTML=newer?'<span class="badge">نیا</span> نیا ورژن v'+relInfo.ver+' دستیاب ہے':'✅ آپ کے پاس تازہ ترین ورژن ہے';
+    if(newer&&auto&&!shownModal){shownModal=true;showModal()}
+  }catch(e){$("#updMsg").textContent="اپڈیٹ چیک نہیں ہو سکی، انٹرنیٹ دیکھیں"}}
+function showModal(){
+  const n=relInfo.notes?("\n\n"+relInfo.notes.slice(0,300)):"";
+  $("#updInfo").style.whiteSpace="pre-line";
+  $("#updInfo").textContent="موجودہ: v"+local.version+"  ←  نیا: v"+relInfo.ver+"\nسائز: "+mb(relInfo.size)+n;
+  $("#updModal").classList.remove("hide")}
+async function doUpdate(){
+  if(!relInfo)return;
+  if(isApk){await openUrl(relInfo.url);$("#updMsg").textContent="ڈاؤن لوڈ شروع ہو گیا۔ مکمل ہونے پر اس پر دبا کر Update منتخب کریں۔"}
+  else{try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));const rg=await navigator.serviceWorker.getRegistrations();await Promise.all(rg.map(r=>r.unregister()))}catch(e){}location.reload()}
+  $("#updModal").classList.add("hide")}
+$("#chk").onclick=()=>checkUpdate(false);$("#doUpd").onclick=doUpdate;
+$("#updNow").onclick=doUpdate;$("#updLater").onclick=()=>$("#updModal").classList.add("hide");
+loadLocal().then(()=>checkUpdate(true));
+
+if("serviceWorker" in navigator&&location.protocol.startsWith("http")){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>

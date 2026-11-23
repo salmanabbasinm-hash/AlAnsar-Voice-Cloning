@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Al-Ansar Voice Cloning، ڈاؤن لوڈ</title>
+<style>
+:root{--bg:#f4f7f6;--card:#fff;--ink:#12302b;--mute:#5d746f;--line:#d7e3e0;--pri:#0f766e;color-scheme:light dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#0d1a18;--card:#142825;--ink:#e6f2ef;--mute:#9db5b0;--line:#27403b;--pri:#14b8a6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Naskh Arabic","Noto Nastaliq Urdu",Tahoma,system-ui,sans-serif;font-size:18px;line-height:1.8}
+.wrap{max-width:480px;margin:0 auto;padding:20px 16px;text-align:center}
+h1{margin:10px 0 0;font-size:26px;color:var(--pri)}
+p{margin:4px 0 14px;color:var(--mute)}
+a.btn{display:block;margin:12px 0;padding:16px;border-radius:16px;background:var(--pri);color:#fff;text-decoration:none;font-weight:700;font-size:19px}
+a.btn.alt{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.ver{margin-top:18px;color:var(--mute);font-size:15px;direction:ltr}
+details{text-align:right;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:16px}
+summary{cursor:pointer;font-weight:700}
+ol{margin:8px 0 0;padding-inline-start:22px;font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🌙 Al-Ansar Voice Cloning</h1>
+  <p>اپنی مرضی کی ایپ ڈاؤن لوڈ کریں</p>
+  <a class="btn" id="apk" href="#">📱 Android ایپ (APK)</a>
+  <a class="btn alt" id="web" href="../">🍎 iPhone / 💻 پی سی (ویب ایپ)</a>
+  <div class="ver" id="ver"></div>
+  <details>
+    <summary>انسٹال کیسے کریں؟</summary>
+    <ol>
+      <li>"Android ایپ" دبائیں، ڈاؤن لوڈ شروع ہو جائے گا۔ اگر یہ صفحہ کسی ایپ کے اندر کھلا ہے تو اوپر مینو سے Chrome میں کھولیں۔</li>
+      <li>ڈاؤن لوڈ ختم ہونے پر نوٹیفکیشن یا Chrome کے Downloads میں فائل پر دبائیں۔</li>
+      <li>فون اجازت مانگے تو "Allow from this source" دیں، پھر Install دبائیں۔</li>
+      <li>Play Protect کا انتباہ آئے تو More details ← Install anyway۔</li>
+      <li>iPhone میں: ویب ایپ کھولیں، Safari میں Share ← Add to Home Screen۔</li>
+    </ol>
+  </details>
+</div>
+<script>
+(async()=>{
+  const j=async u=>{try{return await (await fetch(u,{cache:"no-store"})).json()}catch(e){return {}}};
+  const cfg=await j("../app-config.json"),ver=await j("../version.json");
+  let repo=cfg.repo;
+  if(!repo&&location.hostname.endsWith(".github.io")){const r=location.pathname.split("/").filter(Boolean)[0];if(r)repo=location.hostname.split(".")[0]+"/"+r}
+  const apk=ver.apk||"AlAnsar-VoiceCloning.apk";
+  if(repo)document.getElementById("apk").href="https://github.com/"+repo+"/releases/latest/download/"+apk;
+  if(ver.version)document.getElementById("ver").textContent="v"+ver.version;
+})();
+</script>
+</body>
+</html>

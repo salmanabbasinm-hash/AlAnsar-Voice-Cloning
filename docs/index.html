@@ -145,6 +145,7 @@ button.pri2{background:var(--pri);color:#fff;font-weight:700}button.pri2:disable
     <div class="two"><button id="chk">🔍 اپڈیٹ چیک کریں</button><button class="pri2" id="doUpd" disabled>⬇️ اپڈیٹ کریں</button></div>
     <p class="note">اینڈرائیڈ ایپ میں "اپڈیٹ کریں" نیا APK ڈاؤن لوڈ کرتا ہے، پھر فون کی انسٹال اسکرین پر ایک بار "Update" دبانا ہوتا ہے۔ ڈاؤن لوڈز کی گنتی GitHub سے آتی ہے، یہ اصل انسٹال کی تعداد کا اندازہ ہے۔</p>
     <a class="dl" id="apkLink" href="#" target="_blank" rel="noopener">⬇️ اینڈرائیڈ APK ڈاؤن لوڈ</a>
+    <a class="dl" id="dlPage" href="#" target="_blank" rel="noopener" style="margin-inline-start:6px">📥 ڈاؤن لوڈ صفحہ</a>
   </section>
 
   <section class="card about"><h2>ℹ️ ایپ کے بارے میں (About)</h2>
@@ -283,12 +284,12 @@ $("#openSet").onclick=openSettings;$("#hintBtn").onclick=openSettings;
 $("#closeSet").onclick=()=>$("#settings").classList.add("hide");
 const mb=n=>(n/1048576).toFixed(1)+" MB";
 function cmp(a,b){const x=String(a).replace(/^v/i,"").split(".").map(n=>parseInt(n)||0),y=String(b).replace(/^v/i,"").split(".").map(n=>parseInt(n)||0);for(let i=0;i<3;i++){if((x[i]||0)!==(y[i]||0))return(x[i]||0)>(y[i]||0)?1:-1}return 0}
-async function openUrl(u){try{const B=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Browser;if(B){await B.open({url:u});return}}catch(e){}window.open(u,"_blank")}
+async function openUrl(u){const C=window.Capacitor&&Capacitor.Plugins;try{if(C&&C.AppLauncher){await C.AppLauncher.openUrl({url:u});return}}catch(e){}try{if(C&&C.Browser){await C.Browser.open({url:u});return}}catch(e){}window.open(u,"_blank")}
 async function loadLocal(){
   try{local=await (await fetch("version.json",{cache:"no-store"})).json()}catch(e){}
   try{cfg=await (await fetch("app-config.json",{cache:"no-store"})).json()}catch(e){}
   $("#vInst").textContent="v"+local.version;$("#aVer").textContent="v"+local.version+(isApk?" (اینڈرائیڈ ایپ)":" (ویب ایپ)");
-  if(cfg.repo)$("#apkLink").href="https://github.com/"+cfg.repo+"/releases/latest/download/"+APK_NAME;else $("#apkLink").classList.add("hide")}
+  if(cfg.repo){$("#apkLink").href="https://github.com/"+cfg.repo+"/releases/latest/download/"+(local.apk||APK_NAME);const pr=cfg.repo.split("/");$("#dlPage").href="https://"+pr[0]+".github.io/"+pr[1]+"/download/"}else{$("#apkLink").classList.add("hide");$("#dlPage").classList.add("hide")}}
 let shownModal=false;
 async function checkUpdate(auto){
   if(!cfg.repo){$("#updMsg").textContent="اپڈیٹ کی ترتیب ابھی موجود نہیں (پہلا بلڈ مکمل ہونے کے بعد چلے گی)";return}
@@ -315,7 +316,7 @@ function showModal(){
   $("#updModal").classList.remove("hide")}
 async function doUpdate(){
   if(!relInfo)return;
-  if(isApk){await openUrl(relInfo.url);$("#updMsg").textContent="ڈاؤن لوڈ شروع ہو گیا۔ مکمل ہونے پر اس پر دبا کر Update منتخب کریں۔"}
+  if(isApk){await openUrl(relInfo.url);$("#updMsg").textContent="Chrome میں ڈاؤن لوڈ شروع ہو گیا۔ مکمل ہونے پر فائل پر دبا کر Install منتخب کریں۔"}
   else{try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));const rg=await navigator.serviceWorker.getRegistrations();await Promise.all(rg.map(r=>r.unregister()))}catch(e){}location.reload()}
   $("#updModal").classList.add("hide")}
 $("#chk").onclick=()=>checkUpdate(false);$("#doUpd").onclick=doUpdate;

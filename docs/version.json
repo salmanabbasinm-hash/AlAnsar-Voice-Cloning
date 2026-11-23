@@ -2,7 +2,7 @@
   "name": "Al-Ansar Voice Cloning",
   "repo": "AlAnsar-Voice-Cloning",
   "apk": "AlAnsar-VoiceCloning.apk",
-  "version": "1.3.0",
-  "build": 4,
-  "notes": "ڈاؤن لوڈ صفحہ شامل (download/)، اپڈیٹ اب Chrome میں کھلتی ہے تاکہ انسٹال کا آپشن آئے۔"
+  "version": "1.4.0",
+  "build": 6,
+  "notes": "ایپ کے اندر ہی اپڈیٹ ڈاؤن لوڈ اور انسٹال، پرانے ورژن کے اوپر اپڈیٹ۔"
 }

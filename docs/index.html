@@ -44,7 +44,7 @@ details summary{cursor:pointer;font-weight:700}
 .radio label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin:0}
 audio,video{width:100%;margin-top:8px;border-radius:12px}
 a.dl{display:inline-block;margin-top:8px;padding:10px 14px;background:var(--pri);color:#fff;border-radius:12px;text-decoration:none}
-.hide{display:none}.msg{color:var(--mute);font-size:15px}.err{color:var(--bad);font-weight:700}
+.hide{display:none!important}.msg{color:var(--mute);font-size:15px}.err{color:var(--bad);font-weight:700}
 .note{font-size:14px;color:var(--mute)}
 header{position:relative}
 .gear{position:absolute;left:0;top:8px;background:var(--card);border:1px solid var(--line);width:44px;height:44px;border-radius:50%;padding:0;font-size:22px}
@@ -290,7 +290,7 @@ async function loadLocal(){
   try{cfg=await (await fetch("app-config.json",{cache:"no-store"})).json()}catch(e){}
   $("#vInst").textContent="v"+local.version;$("#aVer").textContent="v"+local.version+(isApk?" (اینڈرائیڈ ایپ)":" (ویب ایپ)");
   if(cfg.repo){$("#apkLink").href="https://github.com/"+cfg.repo+"/releases/latest/download/"+(local.apk||APK_NAME);const pr=cfg.repo.split("/");$("#dlPage").href="https://"+pr[0]+".github.io/"+pr[1]+"/download/"}else{$("#apkLink").classList.add("hide");$("#dlPage").classList.add("hide")}}
-let shownModal=false;
+let shownFor="";
 async function checkUpdate(auto){
   if(!cfg.repo){$("#updMsg").textContent="اپڈیٹ کی ترتیب ابھی موجود نہیں (پہلا بلڈ مکمل ہونے کے بعد چلے گی)";return}
   if(!auto)$("#updMsg").textContent="چیک ہو رہا ہے…";
@@ -307,18 +307,37 @@ async function checkUpdate(auto){
     const newer=cmp(relInfo.ver,local.version)>0;
     $("#doUpd").disabled=!newer;
     $("#updMsg").innerHTML=newer?'<span class="badge">نیا</span> نیا ورژن v'+relInfo.ver+' دستیاب ہے':'✅ آپ کے پاس تازہ ترین ورژن ہے';
-    if(newer&&auto&&!shownModal){shownModal=true;showModal()}
+    if(newer&&auto&&shownFor!==relInfo.ver){shownFor=relInfo.ver;showModal()}
   }catch(e){$("#updMsg").textContent="اپڈیٹ چیک نہیں ہو سکی، انٹرنیٹ دیکھیں"}}
 function showModal(){
   const n=relInfo.notes?("\n\n"+relInfo.notes.slice(0,300)):"";
   $("#updInfo").style.whiteSpace="pre-line";
   $("#updInfo").textContent="موجودہ: v"+local.version+"  ←  نیا: v"+relInfo.ver+"\nسائز: "+mb(relInfo.size)+n;
   $("#updModal").classList.remove("hide")}
+const AI=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.ApkInstaller;
+let updating=false;
+function setUpd(t){$("#updMsg").textContent=t;if(!$("#updModal").classList.contains("hide")){$("#updInfo").style.whiteSpace="pre-line";$("#updInfo").textContent=t}}
+async function inAppUpdate(){
+  const P=AI();if(!P)return false;
+  try{
+    const c=await P.canInstall();
+    if(!c.allowed){setUpd("پہلے اجازت دیں: کھلنے والی سیٹنگ میں اس ایپ کے لیے انسٹال کی اجازت آن کریں، پھر واپس آ کر دوبارہ اپڈیٹ دبائیں۔");await P.openSettings();return true}
+    try{await P.addListener("progress",p=>{if(p.total>0)setUpd("ڈاؤن لوڈ "+Math.round(p.done*100/p.total)+"%  ("+mb(p.done)+" / "+mb(p.total)+")")})}catch(e){}
+    setUpd("ڈاؤن لوڈ شروع ہو رہا ہے…");
+    await P.downloadAndInstall({url:relInfo.url});
+    setUpd("ڈاؤن لوڈ مکمل۔ انسٹال اسکرین پر Update دبائیں۔ ایپ آپ کے ڈیٹا سمیت اپڈیٹ ہو جائے گی۔");
+    return true
+  }catch(e){return false}}
 async function doUpdate(){
-  if(!relInfo)return;
-  if(isApk){await openUrl(relInfo.url);$("#updMsg").textContent="Chrome میں ڈاؤن لوڈ شروع ہو گیا۔ مکمل ہونے پر فائل پر دبا کر Install منتخب کریں۔"}
-  else{try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));const rg=await navigator.serviceWorker.getRegistrations();await Promise.all(rg.map(r=>r.unregister()))}catch(e){}location.reload()}
-  $("#updModal").classList.add("hide")}
+  if(!relInfo||updating)return;
+  if(isApk){
+    updating=true;$("#doUpd").disabled=true;$("#updNow").disabled=true;
+    const ok=await inAppUpdate();
+    if(!ok){await openUrl(relInfo.url);setUpd("Chrome میں ڈاؤن لوڈ شروع ہو گیا۔ مکمل ہونے پر فائل پر دبا کر Install منتخب کریں۔")}
+    updating=false;$("#updNow").disabled=false;$("#doUpd").disabled=false;return}
+  try{const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));const rg=await navigator.serviceWorker.getRegistrations();await Promise.all(rg.map(r=>r.unregister()))}catch(e){}
+  $("#updModal").classList.add("hide");location.reload()}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&!updating)checkUpdate(true)});
 $("#chk").onclick=()=>checkUpdate(false);$("#doUpd").onclick=doUpdate;
 $("#updNow").onclick=doUpdate;$("#updLater").onclick=()=>$("#updModal").classList.add("hide");
 loadLocal().then(()=>checkUpdate(true));

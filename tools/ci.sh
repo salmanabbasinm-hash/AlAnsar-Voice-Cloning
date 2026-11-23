@@ -6,7 +6,7 @@ ZIPNAME="${1:-zip}"
 
 read_json() { python3 -c "import json;print(json.load(open('docs/version.json')).get('$1','$2'))"; }
 VERSION=$(read_json version 1.0.0)
-CODE=$(read_json build 1)
+CODE=$((1000 + ${GITHUB_RUN_NUMBER:-0}))
 NOTES=$(read_json notes "")
 OWNER="${GITHUB_REPOSITORY%%/*}"
 REPO="${GITHUB_REPOSITORY##*/}"
@@ -28,9 +28,12 @@ mkdir -p signing "$HOME/.android"
 if [ ! -f signing/debug.keystore ]; then
   keytool -genkey -v -keystore signing/debug.keystore -storepass android -alias androiddebugkey \
     -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
-    -dname "CN=Android Debug,O=Android,C=US" > /dev/null 2>&1
+    -dname "CN=Android Debug,O=Android,C=US"
 fi
+[ -f signing/debug.keystore ] || { echo "ERROR: signing key could not be created"; exit 1; }
 cp signing/debug.keystore "$HOME/.android/debug.keystore"
+echo "Signing key fingerprint (must stay the same in every build):"
+keytool -list -v -keystore signing/debug.keystore -storepass android -alias androiddebugkey 2>/dev/null | grep -i "SHA256" || true
 
 # 3) save the unpacked source back to the repository
 git config user.name "github-actions[bot]"
@@ -53,10 +56,37 @@ npx cap add android
 MANIFEST=android/app/src/main/AndroidManifest.xml
 sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />#' "$MANIFEST"
 sed -i "s/versionCode 1/versionCode $CODE/; s/versionName \"1.0\"/versionName \"$VERSION\"/" android/app/build.gradle
+# in-app installer (native plugin); if it fails to build, rebuild without it so a release still ships
+PKG=$(python3 -c "import json;print(json.load(open('capacitor.config.json'))['appId'])")
+PKGDIR="$PWD/android/app/src/main/java/$(echo "$PKG" | tr . /)"
+cp "$PKGDIR/MainActivity.java" /tmp/MainActivity.orig
+if [ -f native/ApkInstallerPlugin.java ]; then
+  sed "s/__PKG__/$PKG/g" native/ApkInstallerPlugin.java > "$PKGDIR/ApkInstallerPlugin.java"
+  cat > "$PKGDIR/MainActivity.java" << JAVA
+package $PKG;
+
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(ApkInstallerPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+}
+JAVA
+  sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />#' "$MANIFEST"
+fi
 npx cap sync android
 cd android
 chmod +x gradlew
-./gradlew assembleDebug --no-daemon
+if ! ./gradlew assembleDebug --no-daemon; then
+  echo "::warning::in-app installer failed to build; rebuilding without it"
+  cp /tmp/MainActivity.orig "$PKGDIR/MainActivity.java"
+  rm -f "$PKGDIR/ApkInstallerPlugin.java"
+  ./gradlew assembleDebug --no-daemon
+fi
 cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/AlAnsar-VoiceCloning.apk"
 cd "$GITHUB_WORKSPACE"
 

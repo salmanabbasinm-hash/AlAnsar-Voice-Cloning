@@ -6,6 +6,7 @@ import librosa
 import torch
 
 SR = 24000
+MAX_SECONDS = int(os.environ.get("ALANSAR_MAX_SECONDS", "600"))
 WORK = os.environ.get("ALANSAR_WORK") or ("/content/alansar" if os.path.isdir("/content") else os.path.abspath("./work"))
 os.makedirs(WORK, exist_ok=True)
 
@@ -137,6 +138,8 @@ def process(inp, src, tgt, mode, sample, quality, timing, progress, outdir):
     except subprocess.CalledProcessError:
         raise UserError("فائل پڑھی نہیں جا سکی، دوسری فائل آزمائیں")
     full, _ = sf.read(a24, dtype="float32")
+    if len(full) / SR > MAX_SECONDS:
+        raise UserError("تقریر %d منٹ سے لمبی ہے، اسے چھوٹے حصوں میں دیں" % (MAX_SECONDS // 60))
 
     progress(0.15, "تقریر سنی جا رہی ہے")
     segs, _ = asr.transcribe(a16, language=src, vad_filter=True, beam_size=5)

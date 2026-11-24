@@ -130,7 +130,8 @@ button.pri2{background:var(--pri);color:#fff;font-weight:700}button.pri2:disable
     <label for="srvIn">سرور کا لنک (Colab سے کاپی کر کے چسپاں کریں)</label>
     <input id="srvIn" type="text" dir="ltr" placeholder="https://....trycloudflare.com" autocomplete="off">
     <div class="two"><button class="pri2" id="srvSave">محفوظ کریں</button><button id="srvTest">جانچیں</button></div>
-    <p class="note" id="srvMsg">پورا لنک چسپاں کریں، کلید خود الگ ہو جائے گی۔</p>
+    <p class="note" id="srvMsg">عام طور پر یہاں کچھ ڈالنے کی ضرورت نہیں، ایپ آن لائن سرور سے خود جڑتی ہے۔ اپنا الگ سرور ہو تو اس کا پورا لنک چسپاں کریں۔</p>
+    <button id="srvAuto" style="width:100%;margin-top:4px">☁️ آن لائن سرور پر واپس جائیں</button>
   </section>
 
   <section class="card"><h2>🔄 اپڈیٹ اور ورژن</h2>
@@ -153,8 +154,8 @@ button.pri2{background:var(--pri);color:#fff;font-weight:700}button.pri2:disable
     <p>Al-Ansar Voice Cloning آپ کی تقریر (آڈیو یا ویڈیو) سنتی ہے، اس کا ترجمہ کرتی ہے، اور پھر آپ ہی کی آواز، لہجے اور جذبات کے ساتھ دوسری زبان میں سناتی ہے۔ اردو، عربی، انگریزی، ہندی، فارسی اور مزید زبانیں شامل ہیں۔</p>
     <h3>استعمال کا طریقہ</h3>
     <ol>
-      <li>Colab میں سرور چلائیں اور ملنے والا لنک سیٹنگز ← سرور میں ڈالیں۔</li>
-      <li>اوپر 🟢 "سرور تیار" آنے کا انتظار کریں۔</li>
+      <li>ایپ آن لائن سرور سے خود جڑ جاتی ہے۔ سرور سویا ہو تو پہلی بار 1 سے 2 منٹ زیادہ لگتے ہیں۔</li>
+      <li>اوپر ☁️ "آن لائن سرور" لکھا نظر آنا چاہیے۔</li>
       <li>① میں اپنی تقریر کی فائل چنیں۔</li>
       <li>② اور ③ میں زبانیں چنیں۔</li>
       <li>"آواز بنائیں" دبائیں، اور ختم ہونے پر سنیں یا ڈاؤن لوڈ کریں۔</li>
@@ -197,15 +198,18 @@ $("#src").value="ur";$("#tgt").value="ar";
 $("#swap").onclick=()=>{const a=$("#src").value;$("#src").value=$("#tgt").value;$("#tgt").value=a};
 
 let server=localStorage.getItem("server")||"",key=localStorage.getItem("key")||"";
+let auto=false;
 function parseLink(t){t=(t||"").trim();if(!t)return null;if(!/^https?:\/\//i.test(t))t="https://"+t;
   try{const u=new URL(t);const s=u.searchParams.get("server");
     if(s)return{server:s.replace(/\/+$/,""),key:u.searchParams.get("key")||""};
     return{server:u.origin,key:u.searchParams.get("key")||""}}catch(e){return null}}
-function saveServer(p){server=p.server;key=p.key;localStorage.setItem("server",server);localStorage.setItem("key",key);$("#srvIn").value=server}
+function saveServer(p){auto=false;server=p.server;key=p.key;localStorage.setItem("server",server);localStorage.setItem("key",key);$("#srvIn").value=server}
 (function init(){const q=new URLSearchParams(location.search);
   if(q.get("server")){saveServer({server:q.get("server").replace(/\/+$/,""),key:q.get("key")||""});history.replaceState(null,"",location.pathname)}
   $("#srvIn").value=server})();
 $("#srvSave").onclick=()=>{const p=parseLink($("#srvIn").value);if(!p){$("#srvMsg").textContent="لنک درست نہیں";return}saveServer(p);$("#srvMsg").textContent="محفوظ ہو گیا";health()};
+$("#srvAuto").onclick=()=>{try{localStorage.removeItem("server");localStorage.removeItem("key")}catch(e){}server="";key="";auto=false;$("#srvIn").value="";
+  if(local.server){server=local.server;auto=true;$("#srvMsg").textContent="آن لائن سرور چن لیا گیا"}else{$("#srvMsg").textContent="ابھی کوئی آن لائن سرور مقرر نہیں"}health()};
 $("#srvTest").onclick=async()=>{$("#srvMsg").textContent="جانچ ہو رہی ہے…";await health();$("#srvMsg").textContent=$("#pill").textContent};
 
 const H=()=>({"X-Key":key});
@@ -213,6 +217,7 @@ function pill(c,t){const p=$("#pill");p.className="pill "+c;p.textContent=t}
 let ready=false;
 async function health(){
   $("#hint").classList.toggle("hide",!!server);
+  if(auto){ready=true;pill("ok","☁️ آن لائن سرور");return}
   if(!server){pill("off","سرور کا لنک ڈالیں");ready=false;return}
   try{const r=await fetch(server+"/api/health",{headers:H()});
     if(r.status===401){pill("bad","🔴 کلید غلط ہے، نیا لنک ڈالیں");ready=false;return}
@@ -220,7 +225,7 @@ async function health(){
     if(j.error){pill("bad","🔴 سرور میں خرابی: "+j.error);ready=false;return}
     ready=!!j.ready;pill(ready?"ok":"wait",ready?"🟢 سرور تیار":"🟡 ماڈل لوڈ ہو رہے ہیں، چند منٹ رکیں")
   }catch(e){ready=false;pill("off","🔴 سرور سے رابطہ نہیں")}}
-health();setInterval(()=>{if(!busy)health()},6000);
+health();setInterval(()=>{if(!busy&&!auto)health()},6000);
 
 $("#file").onchange=e=>{const f=e.target.files[0];$("#fileTxt").textContent=f?("✅ "+f.name):"📁 فائل چنیں";$("#fileLbl").classList.toggle("has",!!f)};
 
@@ -250,7 +255,7 @@ $("#go").onclick=async()=>{
   if($("#src").value===$("#tgt").value){alert("دونوں زبانیں الگ چنیں");return}
   await health();if(!ready){alert("سرور ابھی تیار نہیں");return}
   busy=true;$("#go").disabled=true;$("#res").classList.add("hide");$("#prog").classList.remove("hide");
-  $("#fill").style.width="3%";$("#pmsg").textContent="فائل اپ لوڈ ہو رہی ہے…";
+  $("#fill").style.width="3%";$("#pmsg").textContent="فائل اپ لوڈ ہو رہی ہے… (سرور سویا ہو تو 1 سے 2 منٹ لگتے ہیں)";
   try{
     const fd=new FormData();fd.append("file",f,f.name);fd.append("src",$("#src").value);fd.append("tgt",$("#tgt").value);
     fd.append("mode",mode);fd.append("quality",document.querySelector('input[name=q]:checked').value);
@@ -287,6 +292,7 @@ function cmp(a,b){const x=String(a).replace(/^v/i,"").split(".").map(n=>parseInt
 async function openUrl(u){const C=window.Capacitor&&Capacitor.Plugins;try{if(C&&C.AppLauncher){await C.AppLauncher.openUrl({url:u});return}}catch(e){}try{if(C&&C.Browser){await C.Browser.open({url:u});return}}catch(e){}window.open(u,"_blank")}
 async function loadLocal(){
   try{local=await (await fetch("version.json",{cache:"no-store"})).json()}catch(e){}
+  if(!server&&local.server){server=local.server;key="";auto=true;health()}
   try{cfg=await (await fetch("app-config.json",{cache:"no-store"})).json()}catch(e){}
   $("#vInst").textContent="v"+local.version;$("#aVer").textContent="v"+local.version+(isApk?" (اینڈرائیڈ ایپ)":" (ویب ایپ)");
   if(cfg.repo){$("#apkLink").href="https://github.com/"+cfg.repo+"/releases/latest/download/"+(local.apk||APK_NAME);const pr=cfg.repo.split("/");$("#dlPage").href="https://"+pr[0]+".github.io/"+pr[1]+"/download/"}else{$("#apkLink").classList.add("hide");$("#dlPage").classList.add("hide")}}

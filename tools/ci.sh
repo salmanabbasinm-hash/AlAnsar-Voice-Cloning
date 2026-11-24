@@ -15,12 +15,12 @@ echo "== Al-Ansar $VERSION (build $CODE) from $ZIPNAME =="
 # 1) app config (repo name for in-app update checks) + Colab notebook personalisation
 echo "{\"repo\": \"$GITHUB_REPOSITORY\"}" > docs/app-config.json
 python3 - "$OWNER" "$REPO" << 'PY'
-import sys
+import sys, glob
 o, r = sys.argv[1:3]
-p = "colab/Start_Server.ipynb"
-s = open(p, encoding="utf-8").read()
-s = s.replace("YOUR_GITHUB_USERNAME", o).replace('REPO = \\"AlAnsar-Voice-Cloning\\"', 'REPO = \\"%s\\"' % r)
-open(p, "w", encoding="utf-8").write(s)
+for p in glob.glob("colab/*.ipynb"):
+    s = open(p, encoding="utf-8").read()
+    s = s.replace("YOUR_GITHUB_USERNAME", o).replace('REPO = \\"AlAnsar-Voice-Cloning\\"', 'REPO = \\"%s\\"' % r)
+    open(p, "w", encoding="utf-8").write(s)
 PY
 
 # 2) fixed signing key, so every new APK can update the installed one

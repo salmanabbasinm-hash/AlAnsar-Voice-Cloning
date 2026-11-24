@@ -2,7 +2,8 @@
   "name": "Al-Ansar Voice Cloning",
   "repo": "AlAnsar-Voice-Cloning",
   "apk": "AlAnsar-VoiceCloning.apk",
-  "version": "1.4.0",
-  "build": 6,
-  "notes": "ایپ کے اندر ہی اپڈیٹ ڈاؤن لوڈ اور انسٹال، پرانے ورژن کے اوپر اپڈیٹ۔"
+  "server": "",
+  "version": "1.5.1",
+  "build": 8,
+  "notes": "Colab سرور اب Google Drive میں ماڈل محفوظ کرتا ہے، اگلی بار تیز چلتا ہے۔"
 }

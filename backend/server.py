@@ -1,5 +1,5 @@
 """Al-Ansar Voice Cloning - API server (run on a GPU machine / Colab)."""
-import os, uuid, time, shutil, threading, queue, traceback
+import os, uuid, time, shutil, threading, queue, traceback, collections
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -12,7 +12,11 @@ os.makedirs(ROOT, exist_ok=True)
 app = FastAPI(title="Al-Ansar Voice Cloning API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+MAX_MB = int(os.environ.get("ALANSAR_MAX_MB", "60"))
+MAX_JOBS_HOUR = int(os.environ.get("ALANSAR_MAX_JOBS_HOUR", "40"))
+RECENT = collections.deque()
 STATE = {"ready": False, "error": ""}
+_started = False
 JOBS = {}
 Q = queue.Queue()
 
@@ -59,18 +63,34 @@ def _cleanup():
             JOBS.pop(d, None)
 
 
-@app.on_event("startup")
-def _startup():
-    threading.Thread(target=_loader, daemon=True).start()
+def start_background(load_models=True):
+    global _started
+    if _started:
+        return
+    _started = True
+    if load_models:
+        threading.Thread(target=_loader, daemon=True).start()
     threading.Thread(target=_worker, daemon=True).start()
 
 
+@app.on_event("startup")
+def _startup():
+    if os.environ.get("ALANSAR_NO_AUTOSTART") != "1":
+        start_background(True)
+
+
 async def _save(up: UploadFile, dest: str):
+    size = 0
     with open(dest, "wb") as f:
         while True:
             chunk = await up.read(1 << 20)
             if not chunk:
                 break
+            size += len(chunk)
+            if size > MAX_MB * 1048576:
+                f.close()
+                os.remove(dest)
+                raise HTTPException(status_code=413, detail="فائل بہت بڑی ہے (حد %d MB)" % MAX_MB)
             f.write(chunk)
 
 
@@ -86,6 +106,12 @@ async def create_job(file: UploadFile = File(...), src: str = Form("ur"), tgt: s
     if not STATE["ready"]:
         raise HTTPException(status_code=503, detail="ماڈل ابھی لوڈ ہو رہے ہیں")
     _cleanup()
+    now = time.time()
+    while RECENT and now - RECENT[0] > 3600:
+        RECENT.popleft()
+    if len(RECENT) >= MAX_JOBS_HOUR:
+        raise HTTPException(status_code=429, detail="ایک گھنٹے کی حد پوری ہو گئی، کچھ دیر بعد کوشش کریں")
+    RECENT.append(now)
     jid = uuid.uuid4().hex[:10]
     d = os.path.join(ROOT, jid)
     os.makedirs(d, exist_ok=True)
